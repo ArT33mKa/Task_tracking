@@ -1,0 +1,67 @@
+{% extends 'base.html' %}
+
+{% block content %}
+<!-- Видалили рядок load custom_tags, він тут більше не потрібен -->
+<div class="container mt-3">
+    <h2 class="fw-bold" style="color: #2c3e50;">{{ task.title }}</h2>
+    <p class="fs-5">{{ task.description }}</p>
+
+    <div class="mb-4">
+        <span class="badge badge-primary">Статус: {{ task.status }}</span>
+        <span class="badge badge-secondary">Пріоритет: {{ task.priority }}</span>
+    </div>
+
+    <a href="{% url 'tasks:task-update' task.id %}" class="btn btn-warning" style="border-radius: 20px;">Редагувати</a>
+    <a href="{% url 'tasks:task-delete' task.id %}" class="btn btn-danger" style="border-radius: 20px;">Видалити</a>
+
+    <hr style="border-color: #a8c1e6; margin: 30px 0;">
+
+    <!-- Коментарі -->
+    <div class="comments mt-4">
+        <h3 style="color: #3b5998;">Коментарі</h3>
+        {% for comment in task.comments.all %}
+            <div class="comment mb-3 p-3" style="background-color: rgba(255,255,255,0.7); border-left: 4px solid #3b5998; border-radius: 8px;">
+                <p>{{ comment.content }}</p>
+
+                {% if comment.media %}
+                    <div class="comment-media mb-2">
+                        <!-- Замість endswith використовуємо IN -->
+                        {% if ".jpg" in comment.media.url or ".png" in comment.media.url or ".jpeg" in comment.media.url %}
+                            <img src="{{ comment.media.url }}" alt="Зображення коментаря" style="max-width: 100%; border-radius: 8px;">
+                        {% elif ".mp4" in comment.media.url %}
+                            <video width="100%" max-width="400" controls style="border-radius: 8px;">
+                                <source src="{{ comment.media.url }}" type="video/mp4">
+                                Ваш браузер не підтримує відео.
+                            </video>
+                        {% else %}
+                            <a href="{{ comment.media.url }}" class="btn btn-sm btn-outline-primary">📄 Завантажити файл</a>
+                        {% endif %}
+                    </div>
+                {% endif %}
+
+                <div class="d-flex justify-content-between align-items-center mt-2">
+                    <small class="text-muted fw-bold">Автор: {{ comment.author.username }}</small>
+                    <form action="{% url 'tasks:comment-like-toggle' comment.id %}" method="post" class="m-0">
+                        {% csrf_token %}
+                        <button type="submit" class="btn btn-sm {% if request.user in comment.likes.all %}btn-success{% else %}btn-outline-success{% endif %}" style="border-radius: 15px;">
+                            ❤️ Лайк ({{ comment.likes.count }})
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% empty %}
+            <p class="text-muted fst-italic">Тут поки немає коментарів. Будь першим!</p>
+        {% endfor %}
+    </div>
+
+    <!-- Форма додавання коментаря -->
+    <div class="add-comment mt-5 p-4" style="background-color: rgba(255,255,255,0.5); border-radius: 15px;">
+        <h4 style="color: #3b5998;">Додати коментар</h4>
+        <form action="{% url 'tasks:task-detail' task.id %}" method="post" enctype="multipart/form-data">
+            {% csrf_token %}
+            {{ comment_form.as_p }}
+            <button type="submit" class="btn btn-primary px-4" style="border-radius: 20px;">Відправити</button>
+        </form>
+    </div>
+</div>
+{% endblock %}
